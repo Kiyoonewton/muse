@@ -1,0 +1,32 @@
+type IaMarkupResponse {
+    content: String
+}
+
+type IaResponse {
+    id: String
+}
+
+type Ia {
+    id: ID
+    status_id: ID
+    site: String
+    slug: String
+}
+
+input SendIaInput {
+    domain: String!
+    slug: String!
+}
+
+input IaMarkupInput {
+    domain: String! @rules(apply: ["exists:blogs,domain"])
+    slug: String!
+}
+
+extend type Mutation {
+    sendIa(input: SendIaInput @spread): IaResponse
+}
+
+extend type Query {
+    iaMarkup(input: IaMarkupInput @spread): IaMarkupResponse
+}

@@ -1,0 +1,33 @@
+
+type Tag {
+    id: ID
+    uuid: ID
+    name: String
+    created_at: DateTime
+    updated_at: DateTime
+}
+
+extend type Mutation {
+    createTag(
+        name: String!  @rules(apply: ["required"])
+    ): Tag @create
+}
+
+input TagsByBlogUuidInput {
+    blog_uuid: ID @rules(apply: ["required", "exists:blogs,uuid"])
+    page: Int = 1
+    first: Int = 10
+    all: Boolean = false
+    search: String
+    sort: [SortInput]
+    filter: [FilterInput]
+}
+
+type TagResponse {
+    data: [Tag!]
+    paginatorInfo: PaginatorInfo
+}
+
+extend type Query {
+    getTagsByBlogUuid(input: TagsByBlogUuidInput @spread): TagResponse
+}

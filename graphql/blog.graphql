@@ -1,0 +1,47 @@
+type Blog {
+    id: ID!
+    uuid: ID!
+    created_at: DateTime!
+    updated_at: DateTime!
+    posts: [Post!]!
+    site_uuid: ID @deprecated(reason: "only_sub_schema")
+    postsPaginatorInfo: PaginatorInfo
+    domain: String
+    activeCategories: [Category!]!
+    categories: [Category!]!
+}
+
+input CreateBlogInput @validator {
+    domain: String @rules(apply: ["required"])
+    site_uuid: ID @rules(apply: ["required", "uuid"])
+}
+
+input BlogByDomainInput {
+    domain: String! @rules(apply: ["required", "exists:blogs,domain"])
+    activePosts: Boolean = false
+    postsPage: Int = 1
+    postsCount: Int = 10
+}
+
+input GetBlogInput @validator {
+    uuid: ID! @eq @rules(apply: ["required", "exists:blogs,uuid"])
+    filter: FilterInput
+}
+
+extend type Mutation {
+    createBlog(input: CreateBlogInput @spread): Blog @create
+    deleteBlog(uuid: ID! @rules(apply: ["required", "exists:blogs,uuid"])): Blog
+}
+
+extend type Query {
+    getBlog(input: GetBlogInput @spread): Blog
+    blogByUuid(
+        uuid: ID! @eq @rules(apply: ["required", "exists:blogs,uuid"])
+    ): Blog
+
+    getBlogByDomain(input: BlogByDomainInput @spread): Blog
+
+    getBlogBySiteUuid(
+        site_uuid: ID @eq @rules(apply: ["required", "exists:blogs,site_uuid"])
+    ): Blog
+}

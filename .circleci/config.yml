@@ -1,0 +1,77 @@
+version: 2.1
+
+jobs:
+  deploy-to-dev:
+    parameters:
+      SSH_HOST:
+        type: string
+        default: $SSH_HOST
+    machine:
+      image: ubuntu-2204:2024.04.4
+    steps:
+      - run:
+          name: Build and deploy container
+          command: |
+            ssh $SSH_USER@<< parameters.SSH_HOST >> 'cd /home/ubuntu/wazobia && . ./build-and-deploy.sh muse develop'
+      - run:
+          name: Build and deploy ploutonion
+          command: |
+            ssh $SSH_USER@<< parameters.SSH_HOST >> 'cd /home/ubuntu/wazobia && . ./build-and-deploy.sh ploutonion develop'
+  deploy-to-qa:
+    parameters:
+      SSH_HOST:
+        type: string
+        default: $SSH_HOST
+    machine:
+      image: ubuntu-2204:2024.04.4
+    steps:
+      - run:
+          name: Build and deploy container
+          command: |
+            ssh $SSH_USER@<< parameters.SSH_HOST >> 'cd /home/ubuntu/wazobia && . ./build-and-deploy.sh muse qa'
+      - run:
+          name: Build and deploy ploutonion
+          command: |
+            ssh $SSH_USER@<< parameters.SSH_HOST >> 'cd /home/ubuntu/wazobia && . ./build-and-deploy.sh ploutonion qa'
+  deploy-to-master:
+    parameters:
+      SSH_HOST:
+        type: string
+        default: $SSH_HOST
+    machine:
+      image: ubuntu-2204:2024.04.4
+    steps:
+      - run:
+          name: Pull latest code changes from VCS
+          command: |
+            ssh $SSH_USER@<< parameters.SSH_HOST >> 'cd /home/ubuntu/wazobia/muse && /usr/bin/git checkout master && /usr/bin/git pull'
+      - run:
+          name: Rebuild Image on the Server
+          command: |
+            ssh $SSH_USER@<< parameters.SSH_HOST >> '/usr/bin/docker compose -f /home/ubuntu/wazobia/docker-compose.yml build --no-cache muse'
+      - run:
+          name: Deploy built image
+          command: |
+            ssh $SSH_USER@<< parameters.SSH_HOST >> '/usr/bin/docker compose -f /home/ubuntu/wazobia/docker-compose.yml up -d --force-recreate muse'
+workflows:
+  deploy-develop:
+    jobs:
+      - deploy-to-dev:
+          SSH_HOST: $SSH_HOST
+          filters:
+            branches:
+              only: develop
+  deploy-qa:
+    jobs:
+      - deploy-to-qa:
+          SSH_HOST: $SSH_QA_HOST
+          filters:
+            branches:
+              only: qa
+  deploy-master:
+    jobs:
+      - deploy-to-master:
+          SSH_HOST: $SSH_MASTER_HOST
+          filters:
+            branches:
+              only: master

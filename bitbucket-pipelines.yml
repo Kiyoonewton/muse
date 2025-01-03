@@ -1,0 +1,35 @@
+image: wazobiatech/php-fpm:altair
+
+pipelines:
+  pull-requests:
+    "**": # runs the linter and all tests in the codebase for all pull requests
+      - step:
+          name: Setup
+          script:
+            - apk add aws-cli
+            - aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            - aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            - aws configure set region $AWS_DEFAULT_REGION
+            - aws s3 cp s3://$S3_BUCKET_NAME/services/muse/envs/env.development .env
+
+            - mkdir -p bootstrap/cache storage/framework/sessions storage/framework/cache storage/framework/views
+            - composer install
+            - php ./env.validate.php
+            - php artisan key:generate
+            - php artisan migrate
+            - php artisan db:seed
+
+            - ./vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff
+            - ./vendor/bin/phpunit
+          services:
+            - mysql
+
+definitions:
+  services:
+    mysql:
+      image: mysql:8
+      environment:
+        MYSQL_DATABASE: "muse_db"
+        MYSQL_USER: "muse_user"
+        MYSQL_PASSWORD: "muse_pass"
+        MYSQL_ROOT_PASSWORD: "muse_pass"

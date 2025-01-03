@@ -1,0 +1,168 @@
+type Post {
+    id: ID!
+    uuid: ID!
+    slug: String
+    content: String
+    excerpt: String!
+    status: Int!
+    featured_image: JSON
+    title: String
+    tags: [Tag] @hasMany
+    author_uuid: ID @deprecated(reason: "only_sub_schema")
+    visibility: Boolean
+    postConfig: PostConfig @hasOne
+    metadata: JSON
+    blog: Blog @belongsTo
+    category: Category @belongsTo
+    categories: [Category] @belongsToMany
+    category_name: String
+    language_attr: String
+    related_posts: [Post]
+    published_at: DateTime
+    revisions: [PostRevision]
+    created_at: DateTime!
+    updated_at: DateTime!
+}
+
+type PostsByCategoryIDResponse {
+    posts: [Post]
+    paginatorInfo: PaginatorInfo
+}
+
+type PostsResponse {
+    data: [Post]
+    paginatorInfo: PaginatorInfo
+}
+
+type PostConfig {
+    permalink: String
+    is_comments_enabled: Boolean
+    is_in_sitemap: Boolean
+    is_feature_article: Boolean
+    schema: String
+    social_preview_config: String
+    has_related_posts: Boolean
+    related_posts_config: String
+}
+
+type PostRevision {
+    uuid: ID
+    name: String
+    status: Boolean
+    title: String
+    slug: String
+    content: String
+    created_at: DateTime
+    updated_at: DateTime
+}
+
+input PostConfigInput {
+    is_in_sitemap: Boolean
+    is_comments_enabled: Boolean
+    is_feature_article: Boolean
+    schema: String
+    social_preview_config: String
+    related_posts_config: String
+}
+
+input CreatePostInput @validator {
+    uuid: ID
+    status: Boolean
+    title: String
+    content: String
+    author_uuid: ID
+    category_uuids: [ID]
+    blog_uuid: ID
+    visibility: Boolean
+    slug: String
+    tags: [String]
+    featured_image: JSON
+    excerpt: String
+    published_at: DateTime
+    version: String
+    config: PostConfigInput
+    metadata: JSON
+}
+
+input UpdatePostInput @validator {
+    uuid: ID!
+    status: Boolean
+    title: String
+    content: String
+    author_uuid: ID
+    category_uuids: [ID]
+    visibility: Boolean
+    slug: String
+    tags: [String]
+    featured_image: JSON
+    excerpt: String
+    published_at: DateTime
+    version: String
+    config: PostConfigInput
+    metadata: JSON
+}
+
+input PostsByAuthorUuidInput {
+    author_uuid: ID @eq @rules(apply: ["required", "exists:posts,author_uuid"])
+    page: Int = 1
+    first: Int = 10
+}
+
+input PostByBlogUuidAndSlugInput {
+    blog_uuid: ID @rules(apply: ["required", "exists:blogs,uuid"])
+    slug: String @rules(apply: ["required"])
+}
+
+input PostsByCategoryUuidInput {
+    category_uuid: ID @rules(apply: ["required", "exists:categories,uuid"])
+    page: Int = 1
+    first: Int = 10
+    search: String
+    sort: [SortInput]
+    filter: [FilterInput]
+}
+
+input PostsByBlogUuidInput {
+    blog_uuid: ID @rules(apply: ["required", "exists:blogs,uuid"])
+    first: Int = 10
+    page: Int = 1
+    include_drafts: Boolean = false
+    search: String
+    sort: [SortInput]
+    filter: [FilterInput]
+}
+
+input GetPostByUuidInput {
+    blog_uuid: ID @rules(apply: ["required", "exists:blogs,uuid"])
+    uuid: ID @eq @rules(apply: ["required", "exists:posts,uuid"])
+}
+
+extend type Mutation {
+    createPost(input: CreatePostInput @spread): Post
+    updatePost(input: UpdatePostInput @spread): Post
+    deletePost(uuid: ID! @rules(apply: ["required", "exists:posts,uuid"])): Post
+
+    deletePostRevision(
+        uuid: ID! @rules(apply: ["required", "exists:post_revisions,uuid", "uuid"])
+    ): PostRevision
+}
+
+extend type Query {
+    getPostByUuid(input: GetPostByUuidInput @spread): Post
+
+    getPostByBlogUuidAndSlug(input: PostByBlogUuidAndSlugInput @spread): Post
+
+    getPostsByCategoryUuid(input: PostsByCategoryUuidInput @spread): PostsResponse
+
+    getPostsByAuthorUuid(input: PostsByAuthorUuidInput @spread): PostsResponse
+
+    getPostsByUuids(uuids: [ID] @rules(apply: ["required"])): [Post]
+
+    getPostsByBlogUuid(input: PostsByBlogUuidInput @spread): PostsResponse
+
+    getPosts: [Post!]! @paginate
+
+    getPostRevisions(
+        post_uuid: ID @rules(apply: ["required","exists:posts,uuid", "uuid"])
+        ): [PostRevision]
+}

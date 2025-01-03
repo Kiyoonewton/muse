@@ -1,0 +1,68 @@
+type Category {
+    id: ID!
+    uuid: ID!
+    name: String
+    slug: String
+    description: String
+    post_count: Int
+    parent: Category
+    posts: [Post!]! @belongsToMany
+    subCategories: [Category]
+    created_at: DateTime
+    updated_at: DateTime
+}
+
+type CategoriesResponse {
+    data: [Category!]
+    paginatorInfo: PaginatorInfo
+}
+
+input subCategoryInput {
+    uuid: String
+    name: String!
+    slug: String!
+}
+
+input CreateCategoryInput @validator {
+    slug: String!
+    name: String!
+    description: String
+    blog_uuid: ID!
+    subCategories: [subCategoryInput]
+    parent_uuid: ID
+}
+
+input UpdateCategoryInput @validator {
+    uuid: ID!
+    slug: String
+    name: String
+    description: String
+    subCategories: [subCategoryInput]
+}
+
+input CategoriesByBlogUuidInput {
+    blog_uuid: ID @rules(apply: ["required", "exists:blogs,uuid"])
+    page: Int = 1
+    first: Int = 10
+    all: Boolean = false
+    is_parent: Boolean = false
+    search: String
+    sort: [SortInput]
+    filter: [FilterInput]
+}
+
+extend type Mutation {
+    createCategory(input: CreateCategoryInput @spread): Category
+    updateCategory(input: UpdateCategoryInput @spread): Category
+    deleteCategory(
+        uuid: ID! @rules(apply: ["required", "exists:categories,uuid", "uuid"])
+    ): Category
+}
+
+extend type Query {
+    getCategory(
+        uuid: ID! @rules(apply: ["exists:categories,uuid", "uuid"])
+    ): Category
+
+    getCategoriesByBlogUuid(input: CategoriesByBlogUuidInput @spread): CategoriesResponse
+}

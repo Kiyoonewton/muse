@@ -1,0 +1,11 @@
+# hooks/pre-commit
+#!/bin/sh
+
+# Check PHP code style with PHP-CS-Fixer
+vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.dist.php --dry-run --diff
+
+# If PHP-CS-Fixer finds issues, prevent commit
+if [ $? -ne 0 ]; then
+  echo "PHP-CS-Fixer found code style issues. Please fix them before committing."
+  exit 1
+fi
